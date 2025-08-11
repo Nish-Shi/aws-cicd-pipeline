@@ -1,16 +1,29 @@
 version: 0.2
 
+env:
+  variables:
+    ARTIFACT_BUCKET: cicd-artifacts-ns-20250811
+    ARTIFACT_PREFIX: artifacts
+    DEPLOY_REGION: us-east-1
+    DEPLOY_TAG_KEY: App
+    DEPLOY_TAG_VALUE: CICDRoadmap
+    WEBROOT: /var/www/html
+
 phases:
   install:
     commands:
-      - echo Installing dependencies...
+      - python3 --version
+      - pip3 install --upgrade pip
+      - pip3 install boto3
   build:
     commands:
-      - echo Build started on `date`
-      - echo Building the project...
+      # Zip all repo files except CI/meta files
+      - zip -r build.zip . -x ".git/*" ".github/*" "buildspec.yml" "deploy.py"
+      - aws s3 cp build.zip s3://$ARTIFACT_BUCKET/$ARTIFACT_PREFIX/build.zip
   post_build:
     commands:
-      - echo Build completed on `date`
+      - python3 deploy.py
+
 artifacts:
   files:
-    - '**/*'
+    - build.zip
